@@ -2,6 +2,7 @@ import { route, requireString, optionalImage, HttpError } from "./_lib/http.js";
 import { db, check, audit, activePolicy } from "./_lib/db.js";
 import { loadOrder, statusFor } from "./_lib/data.js";
 import { assessReceived } from "./_lib/assess.js";
+import { runClaim } from "./_lib/claim.js";
 import { decide, type Decision } from "./_lib/policyEngine.js";
 
 export const config = { maxDuration: 60 };
@@ -41,6 +42,16 @@ export default route({
       await saveDecision(caseId, "human", r, null, null, statusFor(outcome));
       await audit(caseId, "support", "human.decision", { outcome, note });
       return { ok: true, decision: outcome };
+    }
+
+    // Retry the whole AI check (e.g. the AI was busy). Judged as of the original submission time.
+    if (action === "reassess") {
+      const r = await runClaim({ orderId: kase.order_id, customerText: kase.customer_text, claimPhoto: kase.claim_photo, at: new Date(kase.created_at) });
+      if (!r.aiOk) throw new HttpError(503, r.result.trace[0]?.detail ?? "AI still unavailable");
+      await saveDecision(caseId, "claim", r.result, r.facts, r.model, statusFor(r.result.decision));
+      check(await db().from("return_cases").update({ ...r.extra }).eq("id", caseId), "Update case");
+      await audit(caseId, "support", "ai.retried", { decision: r.result.decision, model: r.model });
+      return { ok: true, result: r.result };
     }
 
     // Re-check the stored facts against the CURRENT policy (no new AI call): shows the policy is live.

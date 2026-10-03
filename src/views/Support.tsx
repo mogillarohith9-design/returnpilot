@@ -14,7 +14,8 @@ export function SupportView() {
   useEffect(() => { load(); }, []);
 
   const count = (pred: (c: any) => boolean) => cases.filter(pred).length;
-  const auto = count(c => c.latest && c.latest.stage === "claim" && c.latest.decision !== "HUMAN_REVIEW");
+  // "Resolved by agent" = the agent itself approved or rejected (not "needs info", not a human decision).
+  const auto = count(c => c.latest && c.latest.stage !== "human" && (c.latest.decision.startsWith("APPROVE") || c.latest.decision === "REJECT"));
 
   return (
     <section>
@@ -96,7 +97,11 @@ function CaseDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
           <input placeholder="Note (why)" value={note} onChange={e => setNote(e.target.value)} />
           <button className="btn" disabled={busy} onClick={() => act({ action: "human", outcome, note })}>Human decision</button>
         </div>
-        <button className="btn secondary" disabled={busy} onClick={() => act({ action: "rerun" })}>↻ Re-check with current policy</button>
+        <div className="row">
+          {last && !last.facts && last.stage === "claim" &&
+            <button className="btn" disabled={busy} onClick={() => act({ action: "reassess" })}>{busy ? "Asking the AI again…" : "⟳ Retry AI check"}</button>}
+          <button className="btn secondary" disabled={busy} onClick={() => act({ action: "rerun" })}>↻ Re-check with current policy</button>
+        </div>
       </div>
 
       <details><summary>Decision history and audit trail ({d.decisions.length} decisions, {d.audit.length} events)</summary>

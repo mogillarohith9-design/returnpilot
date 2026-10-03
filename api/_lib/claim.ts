@@ -23,9 +23,13 @@ export async function runClaim(opts: { orderId: string; customerText: string; cl
         .lte("created_at", iso).gte("expires_at", iso).limit(1), "Check code");
       a.facts.proofCodeValid = !!codes?.length;
     }
+    // If the words were unclear but the photo clearly shows damage, the photo decides the reason. Shown in the trace.
+    const reasonFromPhoto = a.facts.reason === "OTHER" && a.facts.evidence.photoProvided && a.facts.evidence.defectVisible;
+    if (reasonFromPhoto) a.facts.reason = "DAMAGED";
     facts = a.facts;
     extra = { language: a.language, summary: a.summary, reply_customer: a.clarifyingQuestion ?? a.reply };
     result = decide(order, a.facts, policy.rules, customer, opts.at);
+    if (reasonFromPhoto) result.trace.splice(1, 0, { step: "Reason from photo", detail: "Message unclear, photo shows damage: treated as DAMAGED", ok: true });
     result.trace.unshift({ step: "Evidence read by AI", detail: `Model ${a.model}; code read from photo: ${a.codeRead ?? "none"}`, ok: true });
     // When the photo does not show the problem, use the AI's specific question instead of a generic one.
     if (result.decision === "ASK_FOR_EVIDENCE" && !result.flags.includes("PROOF_CODE_MISSING") && a.clarifyingQuestion) {

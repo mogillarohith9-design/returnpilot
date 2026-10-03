@@ -31,7 +31,7 @@ export async function assessClaim(opts: {
     claimPhoto ? "IMAGE A (first image) is the customer's photo of the problem." : "The customer sent no photo.",
     claimPhoto && dispatchPhoto ? "IMAGE B (second image) is the seller's photo taken while packing this order." : "",
     "Return ONLY a JSON object with these keys:",
-    `reason: one of ${REASONS.join(", ")}. DAMAGED = physically broken, cracked, torn or dented on arrival. DEFECTIVE = does not work.`,
+    `reason: one of ${REASONS.join(", ")}. DAMAGED = any physical damage: broken, cracked, torn, ripped, hole, cut, stained, dirty, scratched, dented, burnt or faded. DEFECTIVE = does not work or stopped working. WRONG_ITEM, WRONG_COLOUR, WRONG_SIZE = a different product, colour or size than ordered. CHANGED_MIND = nothing is wrong, the customer no longer wants it. Use OTHER only when none of these fit.`,
     "language: the language of the customer message, in English (for example Telugu).",
     "summary: one neutral English sentence for the support team.",
     "reply_in_customer_language: one short polite sentence, in the customer's language, confirming what you understood. Do not promise any outcome.",

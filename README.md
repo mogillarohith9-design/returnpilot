@@ -1,32 +1,26 @@
-# React + TypeScript + Vite
+# ReturnPilot: evidence-based return resolution agent
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+AI HACK X MRDU 2026 · Team The Web Guild · PS: Autonomous Product Return Resolution Agent
 
-Currently, two official plugins are available:
+**The idea:** AI reads the customer's complaint and photos; a fixed, tested policy engine makes the decision and explains it; weak or risky cases go to a human. Every step is recorded.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+1. **Explainable decision**: every decision cites the policy clause, evidence score and each step taken.
+2. **Evidence chain**: packing photo (seller) vs customer photo vs returned-item photo. Separates transit damage from swaps and empty boxes; holds the refund on a mismatch.
+3. **Proof-of-now photo**: the app issues a one-time 4-digit code; the customer writes it next to the item. Old, downloaded or AI-made photos lack it.
+4. **Policy what-if simulator**: before saving a rule change, see which past decisions would flip.
+5. **Any-language complaints**: Telugu, Hindi, Hinglish or English; support sees an English summary.
 
-## React Compiler
+## Architecture
+- Frontend: React + Vite (`src/`)
+- Backend: Vercel serverless functions (`api/`); API keys stay on the server
+- AI: Google Gemini (`gemini-3.8-flash`, automatic retry and fallback to other Flash models)
+- Database: Supabase Postgres (`schema.sql`); Row Level Security on, only the server can read/write
+- Decision engine: `api/_lib/policyEngine.ts`, deterministic, 20 automated tests (`npm test`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Run / deploy
+1. Supabase: run `schema.sql` in the SQL editor.
+2. Vercel env vars: `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
+3. Push to GitHub; Vercel deploys automatically.
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Demo data only. Pickup, carrier and payments are sandboxed.

@@ -6,6 +6,7 @@ const ACTIONS = ["REPLACEMENT", "REFUND", "EXCHANGE", "HUMAN_INSPECTION"];
 
 export function AdminView() {
   const [rules, setRules] = useState<any>(null);
+  const [original, setOriginal] = useState("");
   const [history, setHistory] = useState<any[]>([]);
   const [sim, setSim] = useState<any>(null);
   const [note, setNote] = useState("");
@@ -13,7 +14,7 @@ export function AdminView() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => api.policy().then(d => { setRules(structuredClone(d.active.rules)); setHistory(d.history); })
+  const load = () => api.policy().then(d => { setRules(structuredClone(d.active.rules)); setOriginal(JSON.stringify(d.active.rules)); setHistory(d.history); })
     .catch(e => setError(e.message));
   useEffect(() => { load(); }, []);
 
@@ -27,6 +28,7 @@ export function AdminView() {
   };
 
   async function run(mode: "simulate" | "save") {
+    if (mode === "save" && JSON.stringify(rules) === original) { setSim(null); setMsg(null); setError("Nothing changed, so no new version was saved."); return; }
     setBusy(true); setError(null); setMsg(null);
     try {
       const r = await api.policyPost(rules, mode, note);

@@ -25,7 +25,7 @@ export function SupportView() {
         <div><b>{cases.length}</b><span>Total cases</span></div>
         <div><b>{auto}</b><span>Resolved by agent</span></div>
         <div><b>{count(c => c.status === "AWAITING_HUMAN")}</b><span>Waiting for human</span></div>
-        <div><b>{count(c => (c.latest?.flags ?? []).some((f: string) => f !== "TRANSIT_DAMAGE"))}</b><span>Fraud signals</span></div>
+        <div><b>{count(c => c.fraud || c.status === "REFUND_HELD")}</b><span>Fraud signals</span></div>
       </div>
       <div className="split">
         <div className="list">
@@ -49,7 +49,7 @@ function CaseDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
   const [d, setD] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [outcome, setOutcome] = useState<Decision>("APPROVE_REPLACEMENT");
+  const [outcome, setOutcome] = useState<Decision | "">("");
   const [note, setNote] = useState("");
   const load = () => api.caseDetail(id).then(setD).catch(e => setError(e.message));
   useEffect(() => { setD(null); load(); }, [id]); // eslint-disable-line
@@ -88,14 +88,15 @@ function CaseDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
       <ErrorBox error={error} />
       <div className="actions">
         <div className="row">
-          <select value={outcome} onChange={e => setOutcome(e.target.value as Decision)}>
+          <select value={outcome} onChange={e => setOutcome(e.target.value as Decision | "")}>
+            <option value="">Choose a decision…</option>
             <option value="APPROVE_REPLACEMENT">Approve replacement</option>
             <option value="APPROVE_REFUND">Approve refund</option>
             <option value="APPROVE_EXCHANGE">Approve exchange</option>
             <option value="REJECT">Reject</option>
           </select>
           <input placeholder="Note (why)" value={note} onChange={e => setNote(e.target.value)} />
-          <button className="btn" disabled={busy} onClick={() => act({ action: "human", outcome, note })}>Human decision</button>
+          <button className="btn" disabled={busy || !outcome} onClick={async () => { await act({ action: "human", outcome, note }); setOutcome(""); }}>Human decision</button>
         </div>
         <div className="row">
           {last && !last.facts && last.stage === "claim" &&

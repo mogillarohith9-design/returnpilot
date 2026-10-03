@@ -24,8 +24,12 @@ export default route({
       ? check(await db().from("decisions").select("case_id, decision, flags, clause_id, evidence_score, stage, created_at").in("case_id", ids).order("created_at"), "Load decisions")
       : [];
     const latest = new Map<string, any>();
-    for (const d of decisions ?? []) latest.set(d.case_id, d); // ordered ascending, so the last one wins
-    return { cases: (cases ?? []).map((c: any) => ({ ...c, latest: latest.get(c.id) ?? null })) };
+    const fraud = new Set<string>();
+    for (const d of decisions ?? []) {
+      latest.set(d.case_id, d); // ordered ascending, so the last one wins
+      if ((d.flags ?? []).some((f: string) => f === "SWAP_SUSPECTED" || f === "UNIT_MISMATCH")) fraud.add(d.case_id);
+    }
+    return { cases: (cases ?? []).map((c: any) => ({ ...c, latest: latest.get(c.id) ?? null, fraud: fraud.has(c.id) })) };
   },
 
   // Customer files a return: AI reads message + photos, server checks the code, engine decides.
